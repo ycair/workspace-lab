@@ -206,8 +206,8 @@
         note.className = 'hint good';
       } else {
         realOpt.disabled = true;
-        note.textContent = `Real 未設定：${c.real?.error || '缺少 service account'}`;
-        note.className = 'hint bad';
+        note.textContent = 'Demo 使用 Mock 模式；Real Workspace 需設定 service account。';
+        note.className = 'hint';
       }
     } catch (e) {
       $('#configNote').textContent = '設定載入失敗：' + e.message;

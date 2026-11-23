@@ -1,7 +1,7 @@
 # WorkspaceLab 設計文件
 
 日期：2026-11-23
-狀態：待核准
+狀態：MVP 已實作（2026-11-23）
 目的：用 MiroFish 式「種子 → 圖譜 → persona → 模擬 → 報告」架構，對真實 Google Workspace 做企業導入實驗。
 
 ---
@@ -29,13 +29,13 @@
 
 ### 目標
 
-1. 今天可完成一個 end-to-end 可跑的完整版。
+1. 第一版完成一個 end-to-end 可跑的完整版。
 2. 同一套劇本可切換 **Mock** 與 **Real Workspace**。
 3. Real 模式預設 **Dry-run**，需明確開啟才會真的寄信／寫檔。
 4. 每個動作都有 audit log、actor、target、timestamp、結果。
 5. 匯出 Markdown／HTML 實驗報告。
 
-### 非目標（今天不做）
+### 非目標（第一版不做）
 
 - Chat 以「使用者身分」發訊息（Google Chat API 限制；需要 Chat app／UI 自動化）
 - Meet 錄影、逐字稿、Gemini 會議筆記（需 UI／權限）
@@ -197,7 +197,7 @@ class WorkspaceAdapter:
 - 所有動作寫 audit log；可匯出。
 - 實驗結束後提供清理清單（刪測試檔、撤分享、關帳號）。
 
-## 10. 完成定義（今天）
+## 10. 完成定義（第一版）
 
 必要：
 

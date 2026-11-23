@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1220"/>
+      <stop offset="0.55" stop-color="#111c2f"/>
+      <stop offset="1" stop-color="#0a111d"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff4d6d"/>
+      <stop offset="0.5" stop-color="#fbbf24"/>
+      <stop offset="1" stop-color="#2dd4bf"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="15%" cy="10%" r="55%">
+      <stop offset="0" stop-color="#ff4d6d" stop-opacity=".32"/>
+      <stop offset="1" stop-color="#ff4d6d" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="90%" cy="0%" r="55%">
+      <stop offset="0" stop-color="#2dd4bf" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#2dd4bf" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="#ffffff" stroke-opacity=".07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="320" rx="18" fill="url(#bg)"/>
+  <rect width="1200" height="320" rx="18" fill="url(#glow1)"/>
+  <rect width="1200" height="320" rx="18" fill="url(#glow2)"/>
+  <rect width="1200" height="320" rx="18" fill="url(#grid)"/>
+  <rect x="54" y="54" width="8" height="212" rx="4" fill="url(#accent)"/>
+  <text x="92" y="112" fill="#ffffff" font-family="PingFang TC, Noto Sans TC, Microsoft JhengHei, sans-serif" font-size="58" font-weight="800" letter-spacing="-2">WorkspaceLab</text>
+  <text x="94" y="156" fill="#fbbf24" font-family="PingFang TC, Noto Sans TC, Microsoft JhengHei, sans-serif" font-size="23" font-weight="700">把 Workspace 導入，先在小人國裡跑一遍。</text>
+  <text x="94" y="190" fill="#93a4bd" font-family="PingFang TC, Noto Sans TC, Microsoft JhengHei, sans-serif" font-size="16">製造業 × 10 personas × 6 agents × 真實 Google Workspace</text>
+  <g font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="700">
+    <rect x="94" y="222" width="118" height="30" rx="15" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".14"/>
+    <text x="111" y="241" fill="#2dd4bf">10 personas</text>
+    <rect x="222" y="222" width="106" height="30" rx="15" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".14"/>
+    <text x="239" y="241" fill="#ff8fa3">6 agents</text>
+    <rect x="338" y="222" width="130" height="30" rx="15" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".14"/>
+    <text x="355" y="241" fill="#fbbf24">3 scenarios</text>
+    <rect x="478" y="222" width="190" height="30" rx="15" fill="#ffffff" fill-opacity=".06" stroke="#ffffff" stroke-opacity=".14"/>
+    <text x="495" y="241" fill="#93c5fd">real / mock adapter</text>
+  </g>
+  <g opacity=".9">
+    <circle cx="1030" cy="104" r="44" fill="#ff4d6d" fill-opacity=".12" stroke="#ff4d6d" stroke-opacity=".35"/>
+    <text x="1015" y="111" fill="#ff8fa3" font-family="SFMono-Regular, Menlo, monospace" font-size="11" font-weight="800">SALES</text>
+    <circle cx="1108" cy="184" r="38" fill="#2dd4bf" fill-opacity=".12" stroke="#2dd4bf" stroke-opacity=".35"/>
+    <text x="1092" y="190" fill="#5eead4" font-family="SFMono-Regular, Menlo, monospace" font-size="10" font-weight="800">PLANNER</text>
+    <circle cx="1018" cy="236" r="34" fill="#fbbf24" fill-opacity=".12" stroke="#fbbf24" stroke-opacity=".35"/>
+    <text x="1003" y="241" fill="#fcd34d" font-family="SFMono-Regular, Menlo, monospace" font-size="9" font-weight="800">DIRECTOR</text>
+  </g>
+</svg>
