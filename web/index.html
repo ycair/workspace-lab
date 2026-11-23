@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WorkspaceLab｜企業導入實驗室</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo">WL</div>
+    <div>
+      <h1>WorkspaceLab</h1>
+      <p>10 personas · 6 agents · real Workspace experiment</p>
+    </div>
+  </div>
+  <div class="status-row">
+    <span id="statusPill" class="pill idle">idle</span>
+    <span id="modePill" class="pill mode">mock</span>
+    <span id="dryPill" class="pill dry">dry run</span>
+  </div>
+  <div class="top-actions">
+    <button id="btnPause" class="btn">Pause</button>
+    <button id="btnReset" class="btn ghost">Reset</button>
+    <button id="btnKill" class="btn kill">KILL</button>
+  </div>
+</header>
+
+<main class="layout">
+  <aside class="left">
+    <section class="panel">
+      <div class="panel-head"><h2>Experiment</h2><span class="eyebrow">control</span></div>
+      <label class="field">Scenario
+        <select id="scenario"></select>
+      </label>
+      <label class="field">Mode
+        <select id="mode">
+          <option value="mock">Mock（無憑證）</option>
+          <option value="real">Real Workspace</option>
+        </select>
+      </label>
+      <label class="field">Step delay（秒）
+        <input id="delay" type="number" value="1.2" min="0.2" max="5" step="0.2">
+      </label>
+      <button id="btnStart" class="btn primary wide">Start experiment</button>
+      <p id="configNote" class="hint">載入設定中…</p>
+    </section>
+
+    <section class="panel personas-panel">
+      <div class="panel-head"><h2>Personas</h2><span id="personaCount" class="eyebrow">10</span></div>
+      <div id="personaList" class="persona-list"></div>
+    </section>
+  </aside>
+
+  <section class="center">
+    <div class="scene-head">
+      <div>
+        <div class="eyebrow">scenario</div>
+        <h2 id="sceneName">詢價報價</h2>
+        <p id="sceneDesc">客戶詢價 → Gemini 摘要 → Sheets 成本 → Docs 提案 → 廠長核准 → 回信。</p>
+      </div>
+      <div class="scene-metric">
+        <span id="pain" class="pain">2 天</span>
+        <span class="arrow">→</span>
+        <span id="gain" class="gain">4 小時</span>
+      </div>
+    </div>
+    <div class="progress"><div id="progressBar"></div></div>
+    <div class="panel feed-panel">
+      <div class="panel-head">
+        <h2>Live action feed</h2>
+        <span id="actionCount" class="eyebrow">0 actions</span>
+      </div>
+      <div id="feed" class="feed"><div class="empty">按「Start experiment」開始。<br>Mock 模式不需要任何 Google 憑證。</div></div>
+    </div>
+  </section>
+
+  <aside class="right">
+    <section class="panel">
+      <div class="panel-head"><h2>Metrics</h2><span class="eyebrow">KPI</span></div>
+      <div id="kpi" class="kpi-grid"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Inject event</h2><span class="eyebrow">what if</span></div>
+      <div class="event-grid">
+        <button class="event" data-type="urgent_order" data-payload="急單：300 件，明天交">急單</button>
+        <button class="event" data-type="material_shortage" data-payload="缺料：SUS304 延 2 天">缺料</button>
+        <button class="event" data-type="quality_issue" data-payload="客訴：A 線刮傷 8 件">客訴</button>
+        <button class="event" data-type="drawing_change" data-payload="圖面改版：YC-1002 v3">圖面改版</button>
+      </div>
+      <p class="hint">事件會寫入 timeline 與 report；不會自動改寫劇本。</p>
+    </section>
+
+    <section class="panel report-panel">
+      <div class="panel-head">
+        <h2>Report</h2>
+        <span><a id="download" class="download" href="/api/report?download=1">下載 .md</a> · <a class="download" href="/api/report?format=html&download=1">HTML</a></span>
+      </div>
+      <pre id="report">尚未執行實驗。</pre>
+    </section>
+  </aside>
+</main>
+
+<div id="toast" class="toast"></div>
+<script src="/app.js"></script>
+</body>
+</html>

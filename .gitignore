@@ -1,0 +1,12 @@
+.venv/
+data/*.db
+data/*.log
+data/*.pid
+exports/*.png
+exports/*.md
+.env
+__pycache__/
+*.pyc
+
+.DS_Store
+exports/
