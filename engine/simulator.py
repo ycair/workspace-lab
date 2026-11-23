@@ -27,6 +27,24 @@ class Simulator:
         self.persona_status = {p.id: "standby" for p in PERSONAS}
 
     # ---------- lifecycle ----------
+    def load_latest(self) -> None:
+        exp = self.store.latest_experiment()
+        if not exp:
+            return
+        self.experiment_id = int(exp["id"])
+        self.scenario_key = exp.get("scenario", "quote")
+        self.mode = exp.get("mode", "mock")
+        self.status = exp.get("status", "done")
+        actions = self.store.list_actions(self.experiment_id)
+        self.step_index = min(len(actions), len(get_scenario(self.scenario_key)["steps"]))
+        for p in PERSONAS:
+            related = [a for a in actions if a["actor"] == p.id]
+            if related:
+                self.persona_status[p.id] = "error" if any(a["status"] == "error" for a in related) else "done"
+        if self.status == "running":
+            self.status = "paused"
+            self.store.update_experiment(self.experiment_id, status="paused")
+
     def start(self, scenario_key: str, mode: str, adapter: Any, delay: float = 1.2) -> dict[str, Any]:
         self.stop()
         self.scenario_key = scenario_key if scenario_key in ("quote", "schedule", "quality") else "quote"

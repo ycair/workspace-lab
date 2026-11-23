@@ -36,6 +36,7 @@ def load_env(path: Path) -> None:
 load_env(ROOT / ".env")
 STORE = Store(ROOT / "data" / "workspace_lab.db")
 SIM = Simulator(STORE)
+SIM.load_latest()
 WEB = ROOT / "web"
 
 
