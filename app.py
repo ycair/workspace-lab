@@ -44,7 +44,7 @@ def real_status() -> dict:
     try:
         s = GoogleSettings.from_env()
         return {"configured": True, "dry_run": s.dry_run, "allowlist": s.allowlist,
-                "admin": s.admin_email}
+                "admin": s.admin_email, "chat": bool(s.chat_webhook_url)}
     except Exception as exc:  # noqa: BLE001
         return {"configured": False, "error": str(exc)}
 

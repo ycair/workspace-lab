@@ -55,6 +55,17 @@ class WorkspaceTest(unittest.TestCase):
         finally:
             os.unlink(path)
 
+    def test_chat_without_webhook_is_skipped(self):
+        adapter = GoogleAdapter(GoogleSettings("/tmp/none.json", "admin@ycair.online", False, ["@ycair.online"]))
+        result = adapter.run({
+            "actor": "plan", "actor_email": "plan@ycair.online", "tool": "Chat",
+            "action": "post_chat", "target": "產銷會議", "summary": "通知",
+            "body": "開會通知",
+        })
+        self.assertTrue(result.ok)
+        self.assertEqual(result.status, "skipped")
+        self.assertIn("CHAT_WEBHOOK_URL", result.error)
+
     def test_real_allowlist_blocks_external(self):
         adapter = GoogleAdapter(GoogleSettings("/tmp/none.json", "admin@ycair.online", True, ["@ycair.online"]))
         result = adapter.run({

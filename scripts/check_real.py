@@ -31,6 +31,15 @@ try:
     gmail = adapter._service("gmail", "v1", settings.admin_email)
     profile = gmail.users().getProfile(userId="me").execute()
     print("gmail profile: OK", profile.get("emailAddress"), profile.get("messagesTotal"))
+    for name, version in (
+        ("drive", "v3"), ("docs", "v1"), ("sheets", "v4"),
+        ("slides", "v1"), ("calendar", "v3"), ("forms", "v1"),
+    ):
+        try:
+            adapter._service(name, version, settings.admin_email)
+            print(f"{name}: build OK")
+        except Exception as exc:  # noqa: BLE001
+            print(f"{name}: BUILD WARN {type(exc).__name__}: {exc}")
     print("RESULT: real adapter can authenticate.")
 except WorkspaceConfigError as exc:
     print("CONFIG ERROR:", exc)

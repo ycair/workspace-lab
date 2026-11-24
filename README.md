@@ -89,11 +89,14 @@ python3 -m venv .venv
 | **6 個 agent** | Director、Sales、Planner、QA、Doc、Verifier |
 | **3 個核心場景** | 詢價報價、排程急單、品質客訴 |
 | **雙模式** | Mock（無憑證）／ Real Workspace（service account + delegation） |
-| **真實 API adapter** | Gmail、Drive、Docs、Sheets、Calendar、Forms |
+| **真實 API adapter** | Gmail、Drive、Docs、Sheets、Slides、Calendar、Forms、Chat webhook |
 | **安全護欄** | 預設 Dry-run、收件人 allowlist、Kill switch、完整 audit log |
 | **即時控制台** | Run／Pause／Resume／Reset／KILL、事件注入、live feed、KPI |
-| **企業名稱** | 每次模擬可輸入企業名稱，寫入 Gmail／Docs／Sheets／Calendar／Forms |
+| **企業名稱** | 每次模擬可輸入企業名稱，寫入 Gmail／Docs／Sheets／Slides／Calendar／Forms |
 | **Workspace artifacts** | 每一步產出可開啟的 Workspace 連結，方便逐張截圖 |
+| **Gmail 工作流** | 詢價信、標籤、回信草稿、寄出草稿 |
+| **Drive 成果資料夾** | 自動建立公司資料夾，將 Docs／Sheets／Slides／Forms 歸檔 |
+| **Chat 通知** | 選用 incoming webhook，將會議通知貼到 Chat space |
 | **實驗報告** | Markdown／HTML，含 timeline、KPI、事件、失敗與建議 |
 
 ## 🏭 製造業場景
@@ -151,6 +154,7 @@ python3 -m venv .venv
 - Google Drive API
 - Google Docs API
 - Google Sheets API
+- Google Slides API
 - Google Calendar API
 - Google Forms API
 
@@ -165,6 +169,7 @@ https://www.googleapis.com/auth/gmail.modify
 https://www.googleapis.com/auth/drive
 https://www.googleapis.com/auth/documents
 https://www.googleapis.com/auth/spreadsheets
+https://www.googleapis.com/auth/presentations
 https://www.googleapis.com/auth/calendar
 https://www.googleapis.com/auth/forms.body
 ```
@@ -180,6 +185,8 @@ GOOGLE_SERVICE_ACCOUNT_JSON=/absolute/path/to/service-account.json
 GOOGLE_ADMIN_EMAIL=admin@your-domain.com
 DRY_RUN=1
 ALLOWLIST=@your-domain.com
+# Optional: Chat incoming webhook (Space settings -> Apps & integrations -> Webhooks)
+CHAT_WEBHOOK_URL=
 ```
 
 ### 4. 驗證
@@ -224,13 +231,14 @@ UI 選 **Real Workspace**，Start。所有動作會顯示 `dry_run`，不會真�
 
 | 項目 | 狀態 |
 |---|---|
-| Chat 以使用者身分發訊息 | 未支援（Google Chat API 主要支援 Chat app） |
+| Chat 以使用者身分發訊息 | 未支援；已支援 incoming webhook 通知 |
 | Meet 錄影／逐字稿／Gemini 筆記 | 未支援（需 UI／權限） |
-| Gemini in Gmail／Docs 的完整 UI | 未支援（目前用模板／log 表示 AI 步驟） |
+| Gemini in Gmail／Docs 的完整 UI | 未支援（無公開 API；用 Studio 的 Gemini steps） |
+| Google Vids 建立 | 未支援（無公開 API；可手動由 Slides 轉 Vids） |
 | AppSheet App 建立 | 未支援（無公開建立 API） |
 | 多租戶／計費／正式產品化 | 未支援 |
 
-> 這些不是忽略，是第二階段用 Playwright／Chat app／Meet API 補。
+> Chat 用 webhook；Vids 與 Gemini 側欄用 Studio／手動；不要把 mock 畫面當成真實 UI。
 
 ## 🗺️ Roadmap
 

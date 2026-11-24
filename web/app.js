@@ -37,10 +37,24 @@
     return d.toLocaleTimeString('zh-TW', { hour12: false });
   }
 
-  function artifactLink(a) {
+  function artifactLinks(a) {
     const p = a.payload || {};
-    const url = p.url || p.htmlLink || p.responderUri || '';
-    return typeof url === 'string' && url.startsWith('https://') ? url : '';
+    const links = [];
+    const add = (label, url) => {
+      if (typeof url !== 'string' || !url.startsWith('https://')) return;
+      if (links.some(x => x.url === url)) return;
+      links.push({ label: label || '開啟', url });
+    };
+    add('開啟', p.url || p.htmlLink || p.responderUri);
+    if (Array.isArray(p.links)) {
+      for (const item of p.links) add(item && item.label, item && item.url);
+    }
+    return links;
+  }
+
+  function artifactLink(a) {
+    const links = artifactLinks(a);
+    return links.length ? links[0].url : '';
   }
 
   function renderCompany(d) {
@@ -183,8 +197,8 @@
     const wrap = $('#artifacts');
     const count = $('#artifactCount');
     if (!wrap) return;
-    const items = (d.actions || []).filter(a => artifactLink(a));
-    count.textContent = `${items.length} links`;
+    const items = (d.actions || []).filter(a => artifactLinks(a).length);
+    count.textContent = `${items.length} items`;
     if (!items.length) {
       wrap.innerHTML = '<div class="empty-small">尚無產出。啟動實驗後，每一步會在這裡留下可開啟的 Workspace 連結。</div>';
       return;
@@ -194,11 +208,20 @@
       const row = document.createElement('div'); row.className = 'artifact';
       const top = document.createElement('div'); top.className = 'a-top';
       const tool = document.createElement('span'); tool.className = 'a-tool'; tool.textContent = a.tool || 'Workspace';
-      const open = document.createElement('a'); open.href = artifactLink(a); open.target = '_blank'; open.rel = 'noopener'; open.textContent = '開啟';
-      top.append(tool, open);
+      const linkWrap = document.createElement('div'); linkWrap.className = 'a-links';
+      for (const link of artifactLinks(a)) {
+        const open = document.createElement('a');
+        open.href = link.url; open.target = '_blank'; open.rel = 'noopener'; open.textContent = link.label;
+        linkWrap.appendChild(open);
+      }
+      top.append(tool, linkWrap);
       const title = document.createElement('div'); title.className = 'a-title'; title.textContent = (a.payload && a.payload.title) || a.target || a.summary || 'Workspace artifact';
       const meta = document.createElement('div'); meta.className = 'a-meta';
-      meta.textContent = `${a.actor || '—'} · ${a.status || ''}${a.payload && a.payload.shared_with_admin === false ? ' · 未共享給 admin' : ''}`;
+      let extra = '';
+      if (a.payload && a.payload.shared_with_admin === false) extra += ' · 未共享給 admin';
+      if (a.payload && typeof a.payload.moved === 'number') extra += ` · 歸檔 ${a.payload.moved} 個`;
+      if (a.payload && a.payload.failed) extra += ` · 失敗 ${a.payload.failed}`;
+      meta.textContent = `${a.actor || '—'} · ${a.status || ''}${extra}`;
       row.append(top, title, meta);
       wrap.appendChild(row);
     }
@@ -258,7 +281,7 @@
       const note = $('#configNote');
       if (c.real?.configured) {
         realOpt.disabled = false;
-        note.textContent = `Real 已設定：${c.real.admin || ''}｜DRY_RUN=${c.real.dry_run ? '1' : '0'}｜allowlist: ${(c.real.allowlist || []).join(', ')}`;
+        note.textContent = `Real 已設定：${c.real.admin || ''}｜DRY_RUN=${c.real.dry_run ? '1' : '0'}｜allowlist: ${(c.real.allowlist || []).join(', ')}｜Chat: ${c.real.chat ? 'webhook' : '未設定'}`;
         note.className = 'hint good';
       } else {
         realOpt.disabled = true;
