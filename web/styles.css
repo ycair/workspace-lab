@@ -35,6 +35,8 @@ button,input,select{font:inherit}
 .btn.kill{background:rgba(255,77,109,.12);border-color:rgba(255,77,109,.35);color:#ffb3c1}
 .btn.wide{width:100%;padding:10px}
 .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.studio-link{display:block;margin-top:8px;color:var(--teal);font-size:10px;font-weight:800;text-decoration:none;text-align:center;border:1px dashed rgba(45,212,191,.28);border-radius:7px;padding:7px 8px;background:rgba(45,212,191,.04)}
+.studio-link:hover{background:rgba(45,212,191,.1);border-color:rgba(45,212,191,.5)}
 
 .layout{display:grid;grid-template-columns:290px minmax(0,1fr) 330px;gap:14px;padding:16px 20px 28px;max-width:1600px;margin:0 auto;align-items:start}
 .left,.right,.center{display:flex;flex-direction:column;gap:12px;min-width:0}

@@ -243,11 +243,16 @@ class GoogleAdapter:
     def _create_event(self, step, actor, tool, target, summary):
         svc = self._service("calendar", "v3", actor)
         title = step.get("title", target)
+        attendees = [{"email": e} for e in step.get("attendees", [])]
+        admin = (self.settings.admin_email or "").strip()
+        if admin and all(a["email"].lower() != admin.lower() for a in attendees):
+            # Make the event visible to the operator account for screenshots.
+            attendees.append({"email": admin, "optional": True})
         body = {
             "summary": title,
             "start": {"dateTime": step.get("start"), "timeZone": "Asia/Taipei"},
             "end": {"dateTime": step.get("end"), "timeZone": "Asia/Taipei"},
-            "attendees": [{"email": e} for e in step.get("attendees", [])],
+            "attendees": attendees,
         }
         if step.get("meet"):
             body["conferenceData"] = {
@@ -255,7 +260,7 @@ class GoogleAdapter:
                                   "conferenceSolutionKey": {"type": "hangoutsMeet"}}
             }
         res = svc.events().insert(
-            calendarId="primary", body=body, conferenceDataVersion=1
+            calendarId="primary", body=body, conferenceDataVersion=1, sendUpdates="none"
         ).execute()
         link = res.get("htmlLink", "")
         return ActionResult(True, "success", tool, actor, target, summary, external_id=res.get("id", ""),

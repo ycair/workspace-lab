@@ -48,6 +48,7 @@
         <input id="delay" type="number" value="1.2" min="0.2" max="5" step="0.2">
       </label>
       <button id="btnStart" class="btn primary wide">Start experiment</button>
+      <a class="studio-link" href="https://studio.workspace.google.com/" target="_blank" rel="noopener">Open Workspace Studio ↗</a>
       <p id="configNote" class="hint">載入設定中…</p>
     </section>
 
@@ -89,7 +90,7 @@
     <section class="panel">
       <div class="panel-head"><h2>Workspace artifacts</h2><span id="artifactCount" class="eyebrow">0 links</span></div>
       <div id="artifacts" class="artifact-list"><div class="empty-small">尚無產出。啟動實驗後，每一步會在這裡留下可開啟的 Workspace 連結。</div></div>
-      <p class="hint">Real 模式才會產生可開啟連結；Docs／Sheets／Forms 會自動共享給 admin。Mock 模式只驗證流程。</p>
+      <p class="hint">Real 模式會產出 Gmail／Docs／Sheets／Calendar／Forms 連結。Docs／Sheets／Forms 共享給 admin；Gmail 用該 persona 開啟；Calendar 已加入 admin。Mock 只驗證流程。</p>
     </section>
 
     <section class="panel">
