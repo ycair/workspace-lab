@@ -19,6 +19,14 @@ try:
     print("admin:", settings.admin_email)
     print("dry_run:", settings.dry_run)
     print("allowlist:", settings.allowlist)
+    try:
+        import json
+        with open(settings.credentials_path, encoding="utf-8") as f:
+            key = json.load(f)
+        print("client_id:", key.get("client_id", "(not found)"))
+        print("service_account:", key.get("client_email", "(not found)"))
+    except Exception as exc:  # noqa: BLE001
+        print("key metadata: WARN", type(exc).__name__, exc)
     adapter = GoogleAdapter(settings)
     gmail = adapter._service("gmail", "v1", settings.admin_email)
     profile = gmail.users().getProfile(userId="me").execute()

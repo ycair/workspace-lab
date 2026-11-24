@@ -47,13 +47,16 @@ python3 -m venv .venv
 
 打開 http://127.0.0.1:8787：
 
-1. Scenario 選「詢價報價」
-2. Mode 選「Mock」
-3. 按 **Start experiment**
-4. 看 live feed、KPI、report
-5. 下載 `.md` 或 `HTML` 報告
+1. 在「企業名稱」輸入這次要呈現的公司名稱（例如：晟銘金屬）
+2. Scenario 選「詢價報價」
+3. Mode 選「Mock」
+4. 按 **Start experiment**
+5. 看 live feed、KPI、report
+6. 下載 `.md` 或 `HTML` 報告
 
 > Mock 模式不需要任何 Google 憑證，適合先看流程與報告。
+> Real 模式會把企業名稱寫進 Gmail 主旨、Docs／Sheets 標題、Calendar 事件與 Forms 標題。
+> 每一步的 Workspace 產出會列在右側 **Workspace artifacts**，點「開啟」即可截圖。
 
 ## 📸 系統截圖
 
@@ -89,6 +92,8 @@ python3 -m venv .venv
 | **真實 API adapter** | Gmail、Drive、Docs、Sheets、Calendar、Forms |
 | **安全護欄** | 預設 Dry-run、收件人 allowlist、Kill switch、完整 audit log |
 | **即時控制台** | Run／Pause／Resume／Reset／KILL、事件注入、live feed、KPI |
+| **企業名稱** | 每次模擬可輸入企業名稱，寫入 Gmail／Docs／Sheets／Calendar／Forms |
+| **Workspace artifacts** | 每一步產出可開啟的 Workspace 連結，方便逐張截圖 |
 | **實驗報告** | Markdown／HTML，含 timeline、KPI、事件、失敗與建議 |
 
 ## 🏭 製造業場景

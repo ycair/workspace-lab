@@ -18,13 +18,14 @@ def _fmt_dt(value: str | None) -> str:
         return value
 
 
-def build_report(store: Store, experiment_id: int | None) -> str:
+def build_report(store: Store, experiment_id: int | None, company: str | None = None) -> str:
     if not experiment_id:
         return "# WorkspaceLab 實驗報告\n\n尚未執行實驗。\n"
     exp = store.get_experiment(experiment_id)
     if not exp:
         return "# WorkspaceLab 實驗報告\n\n找不到實驗。\n"
-    sc = get_scenario(exp["scenario"])
+    company = " ".join((company or exp.get("company") or "").strip().split())[:60]
+    sc = get_scenario(exp["scenario"], company)
     actions = store.list_actions(experiment_id)
     metrics = store.list_metrics(experiment_id)
     events = store.list_events(experiment_id)
@@ -32,9 +33,11 @@ def build_report(store: Store, experiment_id: int | None) -> str:
     dry = [a for a in actions if a["status"] == "dry_run"]
     metric_map = {m["key"]: m for m in metrics}
 
+    title = f"# {company} WorkspaceLab 實驗報告" if company else "# WorkspaceLab 實驗報告"
     lines = [
-        "# WorkspaceLab 實驗報告",
+        title,
         "",
+        f"- 企業：{company or '—'}",
         f"- 實驗：{exp['name']}",
         f"- 場景：{sc['name']}（{sc['pain']} → {sc['gain']}）",
         f"- 模式：{exp['mode']}",
@@ -89,10 +92,13 @@ def build_report(store: Store, experiment_id: int | None) -> str:
     return "\n".join(lines)
 
 
-def build_html_report(store: Store, experiment_id: int | None) -> str:
-    md = build_report(store, experiment_id)
+def build_html_report(store: Store, experiment_id: int | None, company: str | None = None) -> str:
+    exp = store.get_experiment(experiment_id) if experiment_id else None
+    company = " ".join((company or (exp or {}).get("company") or "").strip().split())[:60]
+    md = build_report(store, experiment_id, company or None)
+    page_title = f"{company} WorkspaceLab 實驗報告" if company else "WorkspaceLab 實驗報告"
     return f"""<!DOCTYPE html>
-<html lang="zh-Hant"><head><meta charset="UTF-8"><title>WorkspaceLab 實驗報告</title>
+<html lang="zh-Hant"><head><meta charset="UTF-8"><title>{escape(page_title)}</title>
 <style>body{{background:#0b1220;color:#e8eef7;font-family:"PingFang TC","Noto Sans TC",sans-serif;margin:0;padding:40px}}
 .wrap{{max-width:1000px;margin:0 auto}}pre{{white-space:pre-wrap;line-height:1.7;background:#101b2c;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:24px;font-family:"SFMono-Regular",Menlo,monospace;font-size:12px}}
-h1{{font-size:20px}}</style></head><body><div class="wrap"><h1>WorkspaceLab 實驗報告</h1><pre>{escape(md)}</pre></div></body></html>"""
+h1{{font-size:20px}}</style></head><body><div class="wrap"><h1>{escape(page_title)}</h1><pre>{escape(md)}</pre></div></body></html>"""

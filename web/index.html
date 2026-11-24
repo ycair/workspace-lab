@@ -16,6 +16,7 @@
     </div>
   </div>
   <div class="status-row">
+    <span id="companyPill" class="pill company">YC 金屬加工</span>
     <span id="statusPill" class="pill idle">idle</span>
     <span id="modePill" class="pill mode">mock</span>
     <span id="dryPill" class="pill dry">dry run</span>
@@ -33,6 +34,9 @@
       <div class="panel-head"><h2>Experiment</h2><span class="eyebrow">control</span></div>
       <label class="field">Scenario
         <select id="scenario"></select>
+      </label>
+      <label class="field">企業名稱
+        <input id="company" type="text" value="YC 金屬加工" maxlength="60" placeholder="例如：晟銘金屬">
       </label>
       <label class="field">Mode
         <select id="mode">
@@ -56,7 +60,7 @@
   <section class="center">
     <div class="scene-head">
       <div>
-        <div class="eyebrow">scenario</div>
+        <div class="eyebrow">scenario · <span id="sceneCompany">YC 金屬加工</span></div>
         <h2 id="sceneName">詢價報價</h2>
         <p id="sceneDesc">客戶詢價 → Gemini 摘要 → Sheets 成本 → Docs 提案 → 廠長核准 → 回信。</p>
       </div>
@@ -80,6 +84,12 @@
     <section class="panel">
       <div class="panel-head"><h2>Metrics</h2><span class="eyebrow">KPI</span></div>
       <div id="kpi" class="kpi-grid"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Workspace artifacts</h2><span id="artifactCount" class="eyebrow">0 links</span></div>
+      <div id="artifacts" class="artifact-list"><div class="empty-small">尚無產出。啟動實驗後，每一步會在這裡留下可開啟的 Workspace 連結。</div></div>
+      <p class="hint">Real 模式才會產生可開啟連結；Docs／Sheets／Forms 會自動共享給 admin。Mock 模式只驗證流程。</p>
     </section>
 
     <section class="panel">

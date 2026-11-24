@@ -18,9 +18,14 @@ class StoreTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_action_and_reset(self):
-        eid = self.store.create_experiment("t", "quote", "mock")
-        self.store.add_action(eid, "sales", "SALES", ActionResult(True, "success", "Gmail", "sales", "customer", "sent"))
-        self.assertEqual(len(self.store.list_actions(eid)), 1)
+        eid = self.store.create_experiment("t", "quote", "mock", "測試企業")
+        self.assertEqual(self.store.get_experiment(eid)["company"], "測試企業")
+        result = ActionResult(True, "success", "Gmail", "sales", "customer", "sent",
+                              payload={"url": "https://docs.google.com/document/d/test"})
+        self.store.add_action(eid, "sales", "SALES", result)
+        actions = self.store.list_actions(eid)
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0]["payload"]["url"], "https://docs.google.com/document/d/test")
         self.store.reset()
         self.assertIsNone(self.store.latest_experiment())
         self.assertEqual(self.store.list_actions(eid), [])

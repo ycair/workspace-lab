@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 import threading
 from pathlib import Path
@@ -12,6 +13,7 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS experiments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
+    company TEXT NOT NULL DEFAULT '',
     scenario TEXT NOT NULL,
     mode TEXT NOT NULL,
     status TEXT NOT NULL,
@@ -30,6 +32,7 @@ CREATE TABLE IF NOT EXISTS actions (
     status TEXT NOT NULL,
     error TEXT,
     external_id TEXT,
+    payload TEXT,
     created_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS metrics (
@@ -59,7 +62,18 @@ class Store:
         self._conn.row_factory = sqlite3.Row
         with self._lock:
             self._conn.executescript(SCHEMA)
+            self._ensure_column("experiments", "company", "company TEXT NOT NULL DEFAULT ''")
+            self._ensure_column("actions", "payload", "payload TEXT")
             self._conn.commit()
+
+    def _ensure_column(self, table: str, column: str, ddl: str) -> None:
+        """Best-effort migration for databases created before a column existed."""
+        columns = {
+            row["name"]
+            for row in self._conn.execute(f"PRAGMA table_info({table})").fetchall()
+        }
+        if column not in columns:
+            self._conn.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
 
     def close(self) -> None:
         with self._lock:
@@ -71,11 +85,11 @@ class Store:
                 self._conn.execute(f"DELETE FROM {table}")
             self._conn.commit()
 
-    def create_experiment(self, name: str, scenario: str, mode: str) -> int:
+    def create_experiment(self, name: str, scenario: str, mode: str, company: str = "") -> int:
         with self._lock:
             cur = self._conn.execute(
-                "INSERT INTO experiments(name, scenario, mode, status, started_at) VALUES (?,?,?,?,?)",
-                (name, scenario, mode, "running", now()),
+                "INSERT INTO experiments(name, company, scenario, mode, status, started_at) VALUES (?,?,?,?,?,?)",
+                (name, company, scenario, mode, "running", now()),
             )
             self._conn.commit()
             return int(cur.lastrowid)
@@ -90,13 +104,14 @@ class Store:
             self._conn.commit()
 
     def add_action(self, experiment_id: int, actor: str, agent: str, result: ActionResult) -> int:
+        payload = json.dumps(result.payload or {}, ensure_ascii=False)
         with self._lock:
             cur = self._conn.execute(
-                """INSERT INTO actions(experiment_id, actor, agent, tool, target, summary, status, error, external_id, created_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                """INSERT INTO actions(experiment_id, actor, agent, tool, target, summary, status, error, external_id, payload, created_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     experiment_id, actor, agent, result.tool, result.target,
-                    result.summary, result.status, result.error, result.external_id, now(),
+                    result.summary, result.status, result.error, result.external_id, payload, now(),
                 ),
             )
             self._conn.commit()
@@ -135,7 +150,19 @@ class Store:
                 "SELECT * FROM actions WHERE experiment_id=? ORDER BY id ASC LIMIT ?",
                 (experiment_id, limit),
             ).fetchall()
-        return [dict(r) for r in rows]
+        actions: list[dict[str, Any]] = []
+        for row in rows:
+            action = dict(row)
+            raw = action.get("payload")
+            if raw:
+                try:
+                    action["payload"] = json.loads(raw)
+                except (TypeError, ValueError):
+                    action["payload"] = {}
+            else:
+                action["payload"] = {}
+            actions.append(action)
+        return actions
 
     def list_metrics(self, experiment_id: int) -> list[dict[str, Any]]:
         with self._lock:

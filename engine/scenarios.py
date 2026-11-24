@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import copy
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
 SCENARIOS = {
     "quote": {
         "id": "quote",
@@ -15,15 +19,17 @@ SCENARIOS = {
         "steps": [
             {
                 "actor": "customer", "agent": "SALES", "tool": "Gmail", "action": "send_email",
-                "to": "sales@ycair.online", "subject": "詢價：SUS304 沖壓件 500 pcs",
+                "to": "sales@ycair.online", "subject": "【YC】詢價：SUS304 沖壓件 500 pcs",
                 "target": "sales@ycair.online",
                 "summary": "客戶寄來詢價：500 件、SUS304、3 週交期。",
                 "body": "您好，想詢問 SUS304 沖壓件 500 pcs，t=2.0，交期 3 週，請提供單價與模具費。",
             },
             {
-                "actor": "sales", "agent": "SALES", "tool": "Gemini", "action": "log",
-                "target": "sales@ycair.online",
-                "summary": "Gemini 摘要詢價信，列出缺的 3 個規格。",
+                "actor": "sales", "agent": "SALES", "tool": "Docs", "action": "create_doc",
+                "target": "YC-詢價摘要-2026-11-23",
+                "title": "YC-詢價摘要-2026-11-23",
+                "summary": "Gemini 摘要詢價信並寫入 Docs：列出缺的 3 個規格。",
+                "body": "YC 詢價摘要\n\n客戶：範例家電\n品項：SUS304 沖壓件\n數量：500 pcs\n交期：3 週\n\n缺漏規格：\n1. 厚度公差\n2. 表面處理\n3. 包裝方式\n\n下一步：請業務補齊規格後回覆客戶。",
             },
             {
                 "actor": "sales", "agent": "SALES", "tool": "Sheets", "action": "create_sheet",
@@ -49,16 +55,18 @@ SCENARIOS = {
                 "body": "YC 金屬加工報價提案\n\n客戶：範例家電\n品項：SUS304 沖壓件\n數量：500 pcs\n單價：NT$406.56（未稅）\n交期：3 週\n付款：月結 30 天\n\n備註：模具費已攤提 5,000 件。",
             },
             {
-                "actor": "boss", "agent": "DIRECTOR", "tool": "Workspace", "action": "log",
-                "target": "quote",
-                "summary": "廠長核准報價：毛利 15%，可接受。",
+                "actor": "boss", "agent": "DIRECTOR", "tool": "Docs", "action": "create_doc",
+                "target": "YC-報價核准紀錄-2026-11-23",
+                "title": "YC-報價核准紀錄-2026-11-23",
+                "summary": "廠長核准報價並寫入 Docs 核准紀錄：毛利 15%，可接受。",
+                "body": "YC 報價核准紀錄\n\n核准人：王總經理\n報價：NT$406.56／件（未稅）\n毛利：15%\n交期：3 週\n\n決策：核准，可回覆客戶。",
             },
             {
                 "actor": "sales", "agent": "SALES", "tool": "Gmail", "action": "send_email",
-                "to": "customer@ycair.online", "subject": "回覆：SUS304 沖壓件報價",
+                "to": "customer@ycair.online", "subject": "【YC】回覆：SUS304 沖壓件報價",
                 "target": "customer@ycair.online",
                 "summary": "回覆客戶報價：NT$406.56／件，3 週交期。",
-                "body": "您好，附件為報價提案。單價 NT$406.56（未稅），交期 3 週。請確認規格。",
+                "body": "您好，附件為報價提案。單價 NT$406.56（未稅），交期 3 週。請確認規格。\n\nYC 業務部",
             },
         ],
     },
@@ -75,9 +83,11 @@ SCENARIOS = {
         ],
         "steps": [
             {
-                "actor": "sales", "agent": "SALES", "tool": "Chat", "action": "log",
-                "target": "production",
-                "summary": "業務在 Chat 丟急單：明天要 300 件。",
+                "actor": "sales", "agent": "SALES", "tool": "Docs", "action": "create_doc",
+                "target": "YC-急單通知-2026-11-23",
+                "title": "YC-急單通知-2026-11-23",
+                "summary": "業務在 Chat 丟急單並寫入 Docs 通知紀錄：明天要 300 件。",
+                "body": "YC 急單通知\n\n來源：Chat #production\n內容：明天要 300 件，請生管評估插單。\n影響：待確認。\n\n下一步：生管匯入工單並找出風險工單。",
             },
             {
                 "actor": "plan", "agent": "PLANNER", "tool": "Sheets", "action": "create_sheet",
@@ -94,14 +104,18 @@ SCENARIOS = {
                 ],
             },
             {
-                "actor": "plan", "agent": "PLANNER", "tool": "Gemini", "action": "log",
-                "target": "schedule",
-                "summary": "Gemini 找出交期最緊、尚未開工的 3 張工單。",
+                "actor": "plan", "agent": "PLANNER", "tool": "Docs", "action": "create_doc",
+                "target": "YC-排程風險分析-2026-11-23",
+                "title": "YC-排程風險分析-2026-11-23",
+                "summary": "Gemini 找出風險工單並寫入 Docs：3 張交期最緊、尚未開工。",
+                "body": "YC 排程風險分析\n\nGemini 找出交期最緊、尚未開工的 3 張工單：\n- WO-003 / YC-1003 / 2026-12-08 / 2000 pcs\n- WO-005 / YC-1005 / 2026-12-10 / 300 pcs\n- WO-001 / YC-1001 / 2026-12-05 / 500 pcs\n\n建議：先確認 CT-110 與 CT-160 產能。",
             },
             {
-                "actor": "boss", "agent": "DIRECTOR", "tool": "Chat", "action": "log",
-                "target": "production",
-                "summary": "廠長決策：急單插入，WO-004 延 1 天。",
+                "actor": "boss", "agent": "DIRECTOR", "tool": "Docs", "action": "create_doc",
+                "target": "YC-急單決策紀錄-2026-11-23",
+                "title": "YC-急單決策紀錄-2026-11-23",
+                "summary": "廠長決策並寫入 Docs：急單插入，WO-004 延 1 天。",
+                "body": "YC 急單決策紀錄\n\n決策：急單插入，WO-004 延 1 天。\n與會：廠長、生管、業務。\n\n下一步：建立產銷會議並通知相關人員。",
             },
             {
                 "actor": "plan", "agent": "PLANNER", "tool": "Calendar", "action": "create_event",
@@ -136,29 +150,33 @@ SCENARIOS = {
         "steps": [
             {
                 "actor": "qa", "agent": "QA", "tool": "Forms", "action": "create_form",
-                "target": "製程異常通報",
+                "target": "YC-製程異常通報",
                 "summary": "建立異常通報 Forms：產線、工單、不良類型、照片。",
-                "title": "製程異常通報",
+                "title": "YC-製程異常通報",
                 "questions": [
                     "產線", "工單", "不良類型", "不良數量", "可能原因", "暫處理", "照片連結",
                 ],
             },
             {
                 "actor": "qa", "agent": "QA", "tool": "Docs", "action": "create_doc",
-                "target": "8D-A線刮傷-2026-11-23",
+                "target": "YC-8D-A線刮傷-2026-11-23",
                 "summary": "建立 8D 報告：D1–D8 框架，含暫時對策。",
-                "title": "8D-A線刮傷-2026-11-23",
+                "title": "YC-8D-A線刮傷-2026-11-23",
                 "body": "D1 小組：廠長、品保、生管、模具\nD2 問題：A 線刮傷 8/200\nD3 暫對策：停線清模、客戶端全檢\nD4 原因：模具表面異物\nD5 永久對策：清模 SOP＋工作燈\nD6 驗證：連續 2 批 0 不良\nD7 預防：訓練與稽核\nD8 結案：2026-12-05",
             },
             {
-                "actor": "qa", "agent": "QA", "tool": "Chat", "action": "log",
-                "target": "quality",
-                "summary": "Chat 通知廠長與現場：先停線，containment 開始。",
+                "actor": "qa", "agent": "QA", "tool": "Docs", "action": "create_doc",
+                "target": "YC-客訴通知紀錄-2026-11-23",
+                "title": "YC-客訴通知紀錄-2026-11-23",
+                "summary": "Chat 通知廠長與現場並寫入 Docs：先停線，containment 開始。",
+                "body": "YC 客訴通知紀錄\n\n來源：Chat #quality\n內容：A 線刮傷 8 件，先停線清模，客戶端全檢。\n\n下一步：完成 8D 永久對策並核准。",
             },
             {
-                "actor": "boss", "agent": "DIRECTOR", "tool": "Workspace", "action": "log",
-                "target": "quality",
-                "summary": "廠長核准永久對策：清模 SOP 與工作燈。",
+                "actor": "boss", "agent": "DIRECTOR", "tool": "Docs", "action": "create_doc",
+                "target": "YC-8D核准紀錄-2026-11-23",
+                "title": "YC-8D核准紀錄-2026-11-23",
+                "summary": "廠長核准永久對策並寫入 Docs：清模 SOP 與工作燈。",
+                "body": "YC 8D 核准紀錄\n\n核准人：王總經理\n永久對策：清模 SOP＋工作燈\n驗證：連續 2 批 0 不良\n\n決策：核准，結案日 2026-12-05。",
             },
             {
                 "actor": "qa", "agent": "QA", "tool": "Sheets", "action": "create_sheet",
@@ -176,5 +194,41 @@ SCENARIOS = {
 }
 
 
-def get_scenario(key: str) -> dict:
-    return SCENARIOS.get(key) or SCENARIOS["quote"]
+def _render_text(value: str, company: str) -> str:
+    # Keep the real Workspace domain (ycair.online) intact; only replace the
+    # demo company label that appears in titles, bodies and subjects.
+    return (
+        value.replace("YC 金屬加工", company)
+        .replace("【YC】", f"【{company}】")
+        .replace("YC-", f"{company}-")
+        .replace("YC ", f"{company} ")
+        .replace("YC", company)
+    )
+
+
+def render_scenario(scenario: dict, company: str = "") -> dict:
+    """Return a deep copy with the company name and current demo dates applied."""
+    company = " ".join((company or "").strip().split()) or "YC 金屬加工"
+    now = datetime.now(ZoneInfo("Asia/Taipei"))
+    today = now.strftime("%Y-%m-%d")
+    tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    rendered = copy.deepcopy(scenario)
+
+    def walk(value):
+        if isinstance(value, str):
+            # Replace the calendar date first so a today == 2026-11-24 run does
+            # not accidentally turn 2026-11-23 into tomorrow.
+            value = value.replace("2026-11-24", tomorrow).replace("2026-11-23", today)
+            return _render_text(value, company)
+        if isinstance(value, list):
+            return [walk(v) for v in value]
+        if isinstance(value, dict):
+            return {k: walk(v) for k, v in value.items()}
+        return value
+
+    return walk(rendered)
+
+
+def get_scenario(key: str, company: str = "") -> dict:
+    return render_scenario(SCENARIOS.get(key) or SCENARIOS["quote"], company)

@@ -22,18 +22,28 @@ class SimulatorTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_mock_quote_runs_to_done(self):
-        self.sim.start("quote", "mock", MockAdapter(), delay=0.2)
+        self.sim.start("quote", "mock", MockAdapter(), delay=0.2, company="晟銘金屬")
         for _ in range(60):
             if self.sim.status in ("done", "error"):
                 break
             time.sleep(0.1)
         self.assertEqual(self.sim.status, "done")
+        self.assertEqual(self.sim.state()["company"], "晟銘金屬")
         actions = self.store.list_actions(self.sim.experiment_id)
         self.assertEqual(len(actions), 6)
         self.assertTrue(all(a["status"] == "success" for a in actions))
+        self.assertTrue(any("晟銘金屬" in a["target"] for a in actions))
+        self.assertTrue(any(a["tool"] == "Docs" for a in actions))
         metrics = {m["key"]: m["value"] for m in self.store.list_metrics(self.sim.experiment_id)}
         self.assertEqual(metrics["quote_result_hours"], 4.0)
         self.assertEqual(metrics["errors_total"], 0.0)
+
+    def test_scenario_renders_company_name(self):
+        from engine.scenarios import get_scenario
+        sc = get_scenario("quote", "晟銘金屬")
+        titles = [s.get("title", "") for s in sc["steps"] if s.get("title")]
+        self.assertTrue(any("晟銘金屬" in t for t in titles))
+        self.assertFalse(any("YC-" in t for t in titles))
 
     def test_inject_event(self):
         self.sim.start("quality", "mock", MockAdapter(), delay=0.2)

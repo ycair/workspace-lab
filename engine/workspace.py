@@ -6,6 +6,7 @@ import uuid
 from dataclasses import dataclass
 from email.mime.text import MIMEText
 from typing import Any
+from urllib.parse import quote
 
 from .models import ActionResult
 
@@ -119,6 +120,30 @@ class GoogleAdapter:
         self._services[key] = svc
         return svc
 
+    def _share_with_admin(self, file_id: str, actor: str) -> bool:
+        """Share a Drive-backed artifact with the admin so screenshots are easy.
+
+        The action still succeeds if sharing fails; the payload records the
+        result so the UI can show whether the admin can open it directly.
+        """
+        if not file_id:
+            return False
+        admin = (self.settings.admin_email or "").strip().lower()
+        actor = (actor or "").strip().lower()
+        if not admin or actor == admin:
+            return True
+        try:
+            drive = self._service("drive", "v3", actor)
+            drive.permissions().create(
+                fileId=file_id,
+                body={"type": "user", "role": "writer", "emailAddress": self.settings.admin_email},
+                sendNotificationEmail=False,
+                fields="id",
+            ).execute()
+            return True
+        except Exception:  # noqa: BLE001
+            return False
+
     def run(self, step: dict[str, Any]) -> ActionResult:
         actor = step.get("actor_email") or step.get("actor", "admin")
         tool = step.get("tool", "Workspace")
@@ -129,6 +154,9 @@ class GoogleAdapter:
             if action in ("send_email", "create_draft"):
                 recipient = step.get("to", "")
                 self._check_recipient(recipient)
+            if action == "create_event":
+                for attendee in step.get("attendees", []):
+                    self._check_recipient(attendee)
             if self.settings.dry_run:
                 return ActionResult(
                     True, "dry_run", tool, actor, target,
@@ -162,7 +190,11 @@ class GoogleAdapter:
         msg["subject"] = step.get("subject", "(no subject)")
         raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
         res = svc.users().messages().send(userId="me", body={"raw": raw}).execute()
-        return ActionResult(True, "success", tool, actor, target, summary, external_id=res.get("id", ""))
+        mid = res.get("id", "")
+        url = f"https://mail.google.com/mail/u/?authuser={quote(actor)}#sent/{mid}" if mid else ""
+        return ActionResult(True, "success", tool, actor, target, summary, external_id=mid,
+                            payload={"url": url, "message_id": mid,
+                                     "title": step.get("subject", "") or target})
 
     def _create_draft(self, step, actor, tool, target, summary):
         svc = self._service("gmail", "v1", actor)
@@ -172,7 +204,9 @@ class GoogleAdapter:
         msg["subject"] = step.get("subject", "(no subject)")
         raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
         res = svc.users().drafts().create(userId="me", body={"message": {"raw": raw}}).execute()
-        return ActionResult(True, "success", tool, actor, target, summary, external_id=res.get("id", ""))
+        url = f"https://mail.google.com/mail/u/?authuser={quote(actor)}#drafts"
+        return ActionResult(True, "success", tool, actor, target, summary, external_id=res.get("id", ""),
+                            payload={"url": url, "title": step.get("subject", "") or target})
 
     def _create_sheet(self, step, actor, tool, target, summary):
         svc = self._service("sheets", "v4", actor)
@@ -185,8 +219,10 @@ class GoogleAdapter:
                 spreadsheetId=sid, range="A1", valueInputOption="RAW",
                 body={"values": rows},
             ).execute()
+        shared = self._share_with_admin(sid, actor)
         return ActionResult(True, "success", tool, actor, target, summary, external_id=sid,
-                            payload={"url": f"https://docs.google.com/spreadsheets/d/{sid}"})
+                            payload={"url": f"https://docs.google.com/spreadsheets/d/{sid}",
+                                     "title": title, "shared_with_admin": shared})
 
     def _create_doc(self, step, actor, tool, target, summary):
         svc = self._service("docs", "v1", actor)
@@ -199,13 +235,16 @@ class GoogleAdapter:
                 documentId=did,
                 body={"requests": [{"insertText": {"location": {"index": 1}, "text": body}}]},
             ).execute()
+        shared = self._share_with_admin(did, actor)
         return ActionResult(True, "success", tool, actor, target, summary, external_id=did,
-                            payload={"url": f"https://docs.google.com/document/d/{did}"})
+                            payload={"url": f"https://docs.google.com/document/d/{did}",
+                                     "title": title, "shared_with_admin": shared})
 
     def _create_event(self, step, actor, tool, target, summary):
         svc = self._service("calendar", "v3", actor)
+        title = step.get("title", target)
         body = {
-            "summary": step.get("title", target),
+            "summary": title,
             "start": {"dateTime": step.get("start"), "timeZone": "Asia/Taipei"},
             "end": {"dateTime": step.get("end"), "timeZone": "Asia/Taipei"},
             "attendees": [{"email": e} for e in step.get("attendees", [])],
@@ -218,8 +257,9 @@ class GoogleAdapter:
         res = svc.events().insert(
             calendarId="primary", body=body, conferenceDataVersion=1
         ).execute()
+        link = res.get("htmlLink", "")
         return ActionResult(True, "success", tool, actor, target, summary, external_id=res.get("id", ""),
-                            payload={"htmlLink": res.get("htmlLink", "")})
+                            payload={"url": link, "htmlLink": link, "title": title})
 
     def _create_form(self, step, actor, tool, target, summary):
         svc = self._service("forms", "v1", actor)
@@ -237,16 +277,24 @@ class GoogleAdapter:
                     }
                 })
             svc.forms().batchUpdate(formId=fid, body={"requests": requests}).execute()
+        shared = self._share_with_admin(fid, actor)
         return ActionResult(True, "success", tool, actor, target, summary, external_id=fid,
-                            payload={"responderUri": res.get("responderUri", "")})
+                            payload={"url": f"https://docs.google.com/forms/d/{fid}/edit",
+                                     "title": title,
+                                     "responderUri": res.get("responderUri", ""),
+                                     "shared_with_admin": shared})
 
     def _upload_drive(self, step, actor, tool, target, summary):
         from googleapiclient.http import MediaInMemoryUpload
         svc = self._service("drive", "v3", actor)
         media = MediaInMemoryUpload(step.get("content", "").encode("utf-8"),
                                     mimetype=step.get("mime", "text/plain"))
+        name = step.get("name", target)
         res = svc.files().create(
-            body={"name": step.get("name", target)}, media_body=media, fields="id,webViewLink"
+            body={"name": name}, media_body=media, fields="id,webViewLink"
         ).execute()
-        return ActionResult(True, "success", tool, actor, target, summary, external_id=res.get("id", ""),
-                            payload={"url": res.get("webViewLink", "")})
+        fid = res.get("id", "")
+        shared = self._share_with_admin(fid, actor)
+        return ActionResult(True, "success", tool, actor, target, summary, external_id=fid,
+                            payload={"url": res.get("webViewLink", ""),
+                                     "title": name, "shared_with_admin": shared})

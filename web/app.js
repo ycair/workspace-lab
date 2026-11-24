@@ -4,7 +4,7 @@
     DIRECTOR: '#fbbf24', SALES: '#ff4d6d', PLANNER: '#2dd4bf',
     QA: '#60a5fa', DOC: '#a78bfa', VERIFIER: '#34d399'
   };
-  const state = { data: null, config: null, busy: false, lastReportKey: '' };
+  const state = { data: null, config: null, busy: false, lastReportKey: '', companyInitialized: false };
 
   async function api(path, opts = {}) {
     const res = await fetch(path, {
@@ -35,6 +35,24 @@
     const d = new Date(iso);
     if (isNaN(d)) return iso.slice(11, 19);
     return d.toLocaleTimeString('zh-TW', { hour12: false });
+  }
+
+  function artifactLink(a) {
+    const p = a.payload || {};
+    const url = p.url || p.htmlLink || p.responderUri || '';
+    return typeof url === 'string' && url.startsWith('https://') ? url : '';
+  }
+
+  function renderCompany(d) {
+    if (!state.companyInitialized) {
+      // Reuse the latest experiment's company on first load, unless the user
+      // already has a saved preference in localStorage.
+      if (d.company) $('#company').value = d.company;
+      state.companyInitialized = true;
+    }
+    const name = (d.company || $('#company').value || '').trim() || '—';
+    $('#companyPill').textContent = name;
+    $('#sceneCompany').textContent = name;
   }
 
   function renderStatus(d) {
@@ -115,6 +133,16 @@
       const summary = document.createElement('div'); summary.className = 'summary'; summary.textContent = a.summary;
       const meta = document.createElement('div'); meta.className = 'meta';
       meta.textContent = `${a.actor} → ${a.target || '—'}${a.error ? ' · ' + a.error : ''}`;
+      const link = artifactLink(a);
+      if (link) {
+        const open = document.createElement('a');
+        open.className = 'open';
+        open.href = link;
+        open.target = '_blank';
+        open.rel = 'noopener';
+        open.textContent = '開啟';
+        meta.append(' · ', open);
+      }
       body.append(summary, meta);
       const st = document.createElement('div'); st.className = 'state'; st.textContent = a.status;
       el.append(time, tool, body, st);
@@ -151,12 +179,40 @@
     }
   }
 
+  function renderArtifacts(d) {
+    const wrap = $('#artifacts');
+    const count = $('#artifactCount');
+    if (!wrap) return;
+    const items = (d.actions || []).filter(a => artifactLink(a));
+    count.textContent = `${items.length} links`;
+    if (!items.length) {
+      wrap.innerHTML = '<div class="empty-small">尚無產出。啟動實驗後，每一步會在這裡留下可開啟的 Workspace 連結。</div>';
+      return;
+    }
+    wrap.innerHTML = '';
+    for (const a of items.slice(-60)) {
+      const row = document.createElement('div'); row.className = 'artifact';
+      const top = document.createElement('div'); top.className = 'a-top';
+      const tool = document.createElement('span'); tool.className = 'a-tool'; tool.textContent = a.tool || 'Workspace';
+      const open = document.createElement('a'); open.href = artifactLink(a); open.target = '_blank'; open.rel = 'noopener'; open.textContent = '開啟';
+      top.append(tool, open);
+      const title = document.createElement('div'); title.className = 'a-title'; title.textContent = (a.payload && a.payload.title) || a.target || a.summary || 'Workspace artifact';
+      const meta = document.createElement('div'); meta.className = 'a-meta';
+      meta.textContent = `${a.actor || '—'} · ${a.status || ''}${a.payload && a.payload.shared_with_admin === false ? ' · 未共享給 admin' : ''}`;
+      row.append(top, title, meta);
+      wrap.appendChild(row);
+    }
+    wrap.scrollTop = wrap.scrollHeight;
+  }
+
   function render(d) {
+    renderCompany(d);
     renderStatus(d);
     renderScene(d);
     renderPersonas(d);
     renderFeed(d);
     renderKPI(d);
+    renderArtifacts(d);
     const key = `${d.experiment?.id || 'none'}-${d.status}-${(d.actions || []).length}`;
     if (key !== state.lastReportKey) {
       state.lastReportKey = key;
@@ -219,12 +275,19 @@
     const scenario = $('#scenario').value || 'quote';
     const mode = $('#mode').value || 'mock';
     const delay = Number($('#delay').value || 1.2);
-    if (mode === 'real' && !confirm('Real 模式會呼叫真實 Google Workspace API（目前 DRY_RUN 視設定）。確定？')) return;
+    const company = ($('#company').value || '').trim();
+    if (!company) {
+      toast('請先輸入這次模擬的企業名稱');
+      $('#company').focus();
+      return;
+    }
+    localStorage.setItem('workspaceLabCompany', company);
+    if (mode === 'real' && !confirm(`Real 模式會用 ${company} 的名義呼叫真實 Google Workspace API（目前 DRY_RUN 視設定）。確定？`)) return;
     $('#btnStart').disabled = true;
     try {
       await api('/api/start', {
         method: 'POST',
-        body: JSON.stringify({ scenario, mode, delay }),
+        body: JSON.stringify({ scenario, mode, delay, company }),
       });
       toast(`已啟動：${scenario} / ${mode}`, true);
       await refresh();
@@ -281,11 +344,24 @@
   $('#btnPause').addEventListener('click', pauseResume);
   $('#btnReset').addEventListener('click', reset);
   $('#btnKill').addEventListener('click', kill);
+  $('#company').addEventListener('input', () => {
+    const name = ($('#company').value || '').trim();
+    localStorage.setItem('workspaceLabCompany', name);
+    $('#companyPill').textContent = name || '—';
+    $('#sceneCompany').textContent = name || '—';
+  });
   document.querySelectorAll('.event').forEach(b => {
     b.addEventListener('click', () => inject(b.dataset.type, b.dataset.payload));
   });
 
   (async () => {
+    const savedCompany = localStorage.getItem('workspaceLabCompany');
+    if (savedCompany) {
+      $('#company').value = savedCompany;
+      $('#companyPill').textContent = savedCompany;
+      $('#sceneCompany').textContent = savedCompany;
+      state.companyInitialized = true;
+    }
     await loadConfig();
     await refresh();
     setInterval(refresh, 1500);

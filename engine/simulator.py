@@ -19,6 +19,7 @@ class Simulator:
         self.experiment_id: int | None = None
         self.scenario_key = "quote"
         self.mode = "mock"
+        self.company = ""
         self.status = "idle"
         self.step_index = 0
         self.delay = 1.2
@@ -34,9 +35,10 @@ class Simulator:
         self.experiment_id = int(exp["id"])
         self.scenario_key = exp.get("scenario", "quote")
         self.mode = exp.get("mode", "mock")
+        self.company = exp.get("company", "") or ""
         self.status = exp.get("status", "done")
         actions = self.store.list_actions(self.experiment_id)
-        self.step_index = min(len(actions), len(get_scenario(self.scenario_key)["steps"]))
+        self.step_index = min(len(actions), len(get_scenario(self.scenario_key, self.company)["steps"]))
         for p in PERSONAS:
             related = [a for a in actions if a["actor"] == p.id]
             if related:
@@ -45,9 +47,11 @@ class Simulator:
             self.status = "paused"
             self.store.update_experiment(self.experiment_id, status="paused")
 
-    def start(self, scenario_key: str, mode: str, adapter: Any, delay: float = 1.2) -> dict[str, Any]:
+    def start(self, scenario_key: str, mode: str, adapter: Any, delay: float = 1.2,
+              company: str = "") -> dict[str, Any]:
         self.stop()
         self.scenario_key = scenario_key if scenario_key in ("quote", "schedule", "quality") else "quote"
+        self.company = " ".join((company or "").strip().split())[:60] or "YC 金屬加工"
         self.mode = mode
         self.delay = max(0.2, min(delay, 5.0))
         self.step_index = 0
@@ -56,9 +60,10 @@ class Simulator:
         self.persona_status = {p.id: "standby" for p in PERSONAS}
         self.stop_event.clear()
         self.started_monotonic = time.monotonic()
+        scenario = get_scenario(self.scenario_key, self.company)
         self.experiment_id = self.store.create_experiment(
-            f"{get_scenario(self.scenario_key)['name']} · {time.strftime('%H:%M:%S')}",
-            self.scenario_key, mode,
+            f"{self.company} · {scenario['name']} · {time.strftime('%H:%M:%S')}",
+            self.scenario_key, mode, self.company,
         )
         self.thread = threading.Thread(target=self._run, args=(adapter,), daemon=True)
         self.thread.start()
@@ -91,12 +96,13 @@ class Simulator:
         self.status = "idle"
         self.step_index = 0
         self.error = ""
+        self.company = ""
         self.persona_status = {p.id: "standby" for p in PERSONAS}
         return self.state()
 
     # ---------- execution ----------
     def _run(self, adapter: Any) -> None:
-        scenario = get_scenario(self.scenario_key)
+        scenario = get_scenario(self.scenario_key, self.company)
         steps = scenario["steps"]
         errors = 0
         while not self.stop_event.is_set():
@@ -157,7 +163,7 @@ class Simulator:
 
     # ---------- state ----------
     def state(self) -> dict[str, Any]:
-        scenario = get_scenario(self.scenario_key)
+        scenario = get_scenario(self.scenario_key, self.company)
         experiment = self.store.get_experiment(self.experiment_id) if self.experiment_id else None
         actions = self.store.list_actions(self.experiment_id) if self.experiment_id else []
         metrics = self.store.list_metrics(self.experiment_id) if self.experiment_id else []
@@ -171,6 +177,7 @@ class Simulator:
             "experiment": experiment,
             "status": self.status,
             "mode": self.mode,
+            "company": self.company,
             "scenario": {
                 "id": scenario["id"], "name": scenario["name"],
                 "pain": scenario["pain"], "gain": scenario["gain"],

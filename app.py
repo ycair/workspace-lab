@@ -118,12 +118,13 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/report":
             q = parse_qs(parsed.query)
             fmt = q.get("format", ["md"])[0]
+            company = q.get("company", [None])[0]
             if fmt == "html":
-                text = build_html_report(STORE, SIM.experiment_id)
+                text = build_html_report(STORE, SIM.experiment_id, company)
                 ctype = "text/html; charset=utf-8"
                 filename = "workspacelab-report.html"
             else:
-                text = build_report(STORE, SIM.experiment_id)
+                text = build_report(STORE, SIM.experiment_id, company)
                 ctype = "text/markdown; charset=utf-8"
                 filename = "workspacelab-report.md"
             body = text.encode("utf-8")
@@ -150,6 +151,7 @@ class Handler(BaseHTTPRequestHandler):
             scenario = body.get("scenario", "quote")
             mode = body.get("mode", "mock")
             delay = float(body.get("delay", 1.2))
+            company = str(body.get("company", "")).strip()
             if mode == "real":
                 try:
                     adapter = GoogleAdapter.from_env()
@@ -158,7 +160,7 @@ class Handler(BaseHTTPRequestHandler):
                     return
             else:
                 adapter = MockAdapter()
-            state = SIM.start(scenario, mode, adapter, delay)
+            state = SIM.start(scenario, mode, adapter, delay, company=company)
             self._json(state)
         elif path == "/api/pause":
             self._json(SIM.pause())
